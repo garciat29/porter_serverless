@@ -8,6 +8,9 @@ def lambda_handler(event, context):
     provider=file_key.split('/')[1]
     dataset=file_key.split('/')[2]
     
+    print('!!!Events!!')
+    print(event)
+
     job_name=project+'-'+provider+'-'+dataset
     glue_client= boto3.client('glue')
     
