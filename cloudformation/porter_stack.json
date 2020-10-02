@@ -1,15 +1,6 @@
 {
     "Resources": {
-        "S3AppAssets": {
-            "Type": "AWS::S3::Bucket",
-            "Properties": {
-                "Tags": [
-                    {"Key": "app",
-                    "Value": "porter"}
-                ]
-            }
-        },
-        "S3RAWDEV": {
+        "S3RawDev": {
             "Type": "AWS::S3::Bucket",
             "Properties": {
                 "Tags": [
@@ -20,7 +11,7 @@
                 ]
             }
         },
-        "S3CLEANDEV": {
+        "S3CleanDev": {
             "Type": "AWS::S3::Bucket",
             "Properties": {
                 "Tags": [
@@ -31,39 +22,7 @@
                 ]
             }
         },
-        "S3RAWTST": {
-            "Type": "AWS::S3::Bucket",
-            "DependsOn": ["SNSTstPolicy"],
-            "Properties": {
-                "NotificationConfiguration": {
-                    "TopicConfigurations" : [
-                        {
-                            "Topic" : {"Ref" : "SNSRawTstUpload"},
-                            "Event" : "s3:ObjectCreated:*"
-                        }
-                    ]
-                    
-                },
-                "Tags": [
-                    {"Key": "app",
-                    "Value": "porter"},
-                    {"Key": "env",
-                    "Value": "tst"}
-                ]
-            }
-        },
-        "S3CLEANTST": {
-            "Type": "AWS::S3::Bucket",
-            "Properties": {
-                "Tags": [
-                    {"Key": "app",
-                    "Value": "porter"},
-                    {"Key": "env",
-                    "Value": "tst"}
-                ]
-            }
-        },
-        "S3RAWPRD": {
+        "S3RawPrd": {
             "Type": "AWS::S3::Bucket",
             "DependsOn": ["SNSPrdPolicy"],
             "Properties": {
@@ -84,7 +43,7 @@
                 ]
             }
         },
-        "S3CLEANPRD": {
+        "S3CleanPrd": {
             "Type": "AWS::S3::Bucket",
             "Properties": {
                 "Tags": [
@@ -95,7 +54,7 @@
                 ]
             }
         },
-        "S3GlueJobDEV": {
+        "S3ArchDev": {
             "Type": "AWS::S3::Bucket",
             "Properties": {
                 "Tags": [
@@ -106,14 +65,14 @@
                 ]
             }
         },
-        "S3GlueJobTST": {
+        "S3ArchPrd": {
             "Type": "AWS::S3::Bucket",
             "Properties": {
                 "Tags": [
                     {"Key": "app",
                     "Value": "porter"},
                     {"Key": "env",
-                    "Value": "dev"}
+                    "Value": "prd"}
                 ]
             }
         },
@@ -124,7 +83,7 @@
                     {"Key": "app",
                     "Value": "porter"},
                     {"Key": "env",
-                    "Value": "dev"}
+                    "Value": "prd"}
                 ]
             }
         },
@@ -143,24 +102,6 @@
                 "CatalogId" : { "Ref" : "AWS::AccountId" },
                 "DatabaseInput" : {
                     "Name" : "porter_clean_dev"
-                }
-            }
-        },
-        "GlueDbRAWTST":{
-            "Type" : "AWS::Glue::Database",
-            "Properties" : {
-                "CatalogId" : { "Ref" : "AWS::AccountId" },
-                "DatabaseInput" : {
-                    "Name" : "porter_raw_tst"
-                }
-            }
-        },
-        "GlueDbCLEANTST":{
-            "Type" : "AWS::Glue::Database",
-            "Properties" : {
-                "CatalogId" : { "Ref" : "AWS::AccountId" },
-                "DatabaseInput" : {
-                    "Name" : "porter_clean_tst"
                 }
             }
         },
@@ -206,7 +147,6 @@
                             "Resource": [ 
                                 {"Fn::GetAtt": ["AppRepo", "Arn"]},
                                 {"Fn::GetAtt": ["ETLDevRepo", "Arn"]},
-                                {"Fn::GetAtt": ["ETLTstRepo", "Arn"]},
                                 {"Fn::GetAtt": ["ETLPrdRepo", "Arn"]}
                             ]
                         }
@@ -316,6 +256,15 @@
                                         "sqs:ReceiveMessage"
                                     ],
                                     "Resource": "*"
+                                },
+                                {
+                                    "Sid": "S3ETLPermissions",
+                                    "Effect": "Allow",
+                                    "Action": ["s3:GetObject","s3:GetObjectVersion", "s3:ListBucket"],
+                                    "Resource": [
+                                        {"Fn::GetAtt": ["S3GlueJobPRD", "Arn"]},
+                                        {"Fn::Join": [ "",  [{"Fn::GetAtt": ["S3GlueJobPRD", "Arn"]},"/*"]]}
+                                    ]
                                 }
                             ]
                         }
@@ -388,19 +337,6 @@
                 ]
             }
         },
-        "ETLTstRepo": {
-            "Type" : "AWS::CodeCommit::Repository",
-            "Properties" : {
-                "RepositoryDescription" : "Development Environment ETL Assets",
-                "RepositoryName" : "PorterETLTst",
-                "Tags" : [
-                    {"Key": "app",
-                    "Value": "porter"},
-                    {"Key": "env",
-                    "Value": "tst"}
-                ]
-            }
-        },
         "ETLPrdRepo": {
             "Type" : "AWS::CodeCommit::Repository",
             "Properties" : {
@@ -412,47 +348,6 @@
                     {"Key": "env",
                     "Value": "prd"}
                 ]
-            }
-        },
-        "SNSRawTstUpload": { 
-            "Type" : "AWS::SNS::Topic",
-            "Properties" : {
-                "DisplayName" : "PorterRawTstUpload",
-                "Tags": [
-                    {"Key": "app",
-                    "Value": "porter"},
-                    {"Key": "env",
-                    "Value": "tst"}
-                ],
-                "TopicName" : "PorterRawTstUpload",
-                "Subscription" : [
-                    {
-                        "Endpoint" : {"Fn::GetAtt": ["SQSTst", "Arn"]},
-                        "Protocol" : "sqs"
-                    }
-                ]
-              }
-        },
-        "SNSTstPolicy": {
-            "Type": "AWS::SNS::TopicPolicy",
-            "Properties": {
-                "PolicyDocument": {
-                    "Id": "SNSTopicPolicy",
-                    "Statement": [
-                        {
-                            "Sid": "Statement-id",
-                            "Effect": "Allow",
-                            "Principal": { "AWS": "*" },
-                            "Action": "sns:Publish",
-                            "Resource": { "Ref": "SNSRawTstUpload" },
-                            "Condition": {
-                                "ArnLike": {
-                                    "aws:SourceArn": { "Fn::Join": [ "", [ "arn:aws:s3:::", "porter-*rawtst*" ]]} }
-                            }
-                        }
-                    ]
-                },
-                "Topics": [ { "Ref": "SNSRawTstUpload" } ]
             }
         },
         "SNSRawPrdUpload": { 
@@ -494,18 +389,6 @@
                     ]
                 },
                 "Topics": [ { "Ref": "SNSRawPrdUpload" } ]
-            }
-        },
-        "SQSTst": {
-            "Type" : "AWS::SQS::Queue",
-            "Properties" : {
-                "VisibilityTimeout": 900,
-                "Tags": [
-                    {"Key": "app",
-                    "Value": "porter"},
-                    {"Key": "env",
-                    "Value": "tst"}
-                ]
             }
         },
         "SQSPrd": {
@@ -567,55 +450,6 @@
                 ]
             }
         },
-        "AppBuildProject": {
-            "Type": "AWS::CodeBuild::Project",
-            "Properties": {
-                "Artifacts": {
-                    "Type": "S3",
-                    "Location": {"Ref": "S3AppAssets"}
-                },
-                "Environment": {
-                    "ComputeType": "BUILD_GENERAL1_SMALL",
-                    "Image": "aws/codebuild/amazonlinux2-x86_64-standard:3.0",
-                    "Type": "LINUX_CONTAINER"
-                },
-                "ServiceRole":  {"Fn::GetAtt": ["RoleCodebuild", "Arn"]},
-                "Source": {
-                    "Location": {"Fn::GetAtt": ["AppRepo", "CloneUrlHttp"]},
-                    "Type": "CODECOMMIT"
-                },
-                "Tags": [
-                    {"Key": "app",
-                    "Value": "porter"}
-                ]
-            }
-        },
-        "LambdaInvokeGlueTST": {
-            "Type" : "AWS::Lambda::Function",
-            "Properties" : {
-                "Code": {
-                    "S3Bucket" : "porter-public-assets",
-                    "S3Key" : "lambda/porter-glue-executor.zip"
-                },
-                "Description": "Invoke a glue job to convert data from raw to clean",
-                "Handler": "porter-glue-executor.lambda_handler",
-                "Role": {"Fn::GetAtt": ["ETLJobExecutionRole", "Arn"]},
-                "Runtime": "python3.8",
-                "Timeout": 900,
-                "Tags": [
-                    {"Key": "app",
-                    "Value": "porter"}
-                ]
-            }
-        },
-        "LambdaInvokeGlueTstEvent": {
-            "Type" : "AWS::Lambda::EventSourceMapping",
-            "Properties" : {
-                "Enabled" : true,
-                "EventSourceArn" : {"Fn::GetAtt": ["SQSTst", "Arn"]},
-                "FunctionName" : {"Fn::GetAtt": ["LambdaInvokeGlueTST", "Arn"]}
-            }
-        },
         "LambdaInvokeGluePRD": {
             "Type" : "AWS::Lambda::Function",
             "Properties" : {
@@ -641,6 +475,7 @@
                 "EventSourceArn" : {"Fn::GetAtt": ["SQSPrd", "Arn"]},
                 "FunctionName" : {"Fn::GetAtt": ["LambdaInvokeGluePRD", "Arn"]}
             }
-        },
+        }
     }
 }
+
