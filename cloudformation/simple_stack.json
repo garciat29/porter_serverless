@@ -1,0 +1,28 @@
+{
+    "Resources": {
+        "TestBucket1": {
+            "Type": "AWS::S3::Bucket",
+            "DeletionPolicy": "Retain",
+            "Properties": {
+                "Tags": [
+                    {"Key": "app",
+                    "Value": "porter"},
+                    {"Key": "env",
+                    "Value": "dev"}
+                ]
+            }
+        },
+        "TestBucket2": {
+            "Type": "AWS::S3::Bucket",
+            "DeletionPolicy": "Retain",
+            "Properties": {
+                "Tags": [
+                    {"Key": "app",
+                    "Value": "porter"},
+                    {"Key": "env",
+                    "Value": "dev"}
+                ]
+            }
+        }
+    }
+}

@@ -137,7 +137,12 @@
                             "Action": [
                                 "s3:*"
                             ],
-                            "Resource": "arn:aws:s3:::porter-*"
+                            "Resource": [
+                                {"Fn::Join": [ "",  [{"Fn::GetAtt": ["S3RawDev", "Arn"]},"/*"]]},
+                                {"Fn::Join": [ "",  [{"Fn::GetAtt": ["S3CleanDev", "Arn"]},"/*"]]},
+                                {"Fn::Join": [ "",  [{"Fn::GetAtt": ["S3RawPrd", "Arn"]},"/*"]]},
+                                {"Fn::Join": [ "",  [{"Fn::GetAtt": ["S3CleanPrd", "Arn"]},"/*"]]}
+                            ]
                         },
                         {
                             "Effect": "Allow",
@@ -171,7 +176,7 @@
                             "Action": [
                                 "s3:GetObject"
                             ],
-                            "Resource": "arn:aws:s3:::porter-*cleanprd-*"
+                            "Resource": {"Fn::Join": [ "",  [{"Fn::GetAtt": ["S3CleanPrd", "Arn"]},"/*"]]}
                         }
                     ]
                   },
@@ -251,19 +256,20 @@
                                     "Sid": "sqsPermissions",
                                     "Effect": "Allow",
                                     "Action": [
-                                        "sqs:DeleteMessage",
                                         "sqs:GetQueueAttributes",
                                         "sqs:ReceiveMessage"
                                     ],
-                                    "Resource": "*"
+                                    "Resource": {"Fn::GetAtt": ["SQSPrd", "Arn"]}
                                 },
                                 {
                                     "Sid": "S3ETLPermissions",
                                     "Effect": "Allow",
                                     "Action": ["s3:GetObject","s3:GetObjectVersion", "s3:ListBucket"],
                                     "Resource": [
-                                        {"Fn::GetAtt": ["S3GlueJobPRD", "Arn"]},
-                                        {"Fn::Join": [ "",  [{"Fn::GetAtt": ["S3GlueJobPRD", "Arn"]},"/*"]]}
+                                        {"Fn::Join": [ "",  [{"Fn::GetAtt": ["S3RawDev", "Arn"]},"/*"]]},
+                                        {"Fn::Join": [ "",  [{"Fn::GetAtt": ["S3CleanDev", "Arn"]},"/*"]]},
+                                        {"Fn::Join": [ "",  [{"Fn::GetAtt": ["S3RawPrd", "Arn"]},"/*"]]},
+                                        {"Fn::Join": [ "",  [{"Fn::GetAtt": ["S3CleanPrd", "Arn"]},"/*"]]}
                                     ]
                                 }
                             ]
@@ -305,7 +311,10 @@
                                     "Sid": "s3access",
                                     "Effect": "Allow",
                                     "Action": "s3:*",
-                                    "Resource": "arn:aws:s3:::porter-*"
+                                    "Resource": [
+                                        {"Fn::GetAtt": ["S3GlueJobPRD", "Arn"]},
+                                        {"Fn::Join": [ "",  [{"Fn::GetAtt": ["S3GlueJobPRD", "Arn"]},"/*"]]}
+                                    ]
                                 }
                             ]
                         }
@@ -383,7 +392,8 @@
                             "Resource": { "Ref": "SNSRawPrdUpload" },
                             "Condition": {
                                 "ArnLike": {
-                                    "aws:SourceArn": { "Fn::Join": [ "", [ "arn:aws:s3:::", "porter-*rawprd*" ]]} }
+                                    "aws:SourceArn": "arn:aws:s3:::porter-s3rawprd*"
+                                }
                             }
                         }
                     ]
@@ -464,7 +474,7 @@
                 "Timeout": 900,
                 "Tags": [
                     {"Key": "app",
-                    "Value": "porter"}
+                    "Value": "orter"}
                 ]
             }
         },

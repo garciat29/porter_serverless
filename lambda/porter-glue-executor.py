@@ -3,6 +3,7 @@ import boto3
 
 def lambda_handler(event, context):
     #interpret incoming s3 key
+    #fake plastic comment
     file_key=event['Records'][0]['s3']['object']['key']
     project=file_key.split('/')[0]
     provider=file_key.split('/')[1]
